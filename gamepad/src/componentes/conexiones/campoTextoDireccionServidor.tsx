@@ -10,7 +10,7 @@ export function CampoTextoDireccionServidor({ direccionServidor, alCambiarDirecc
     <TextInput
       value={direccionServidor}
       onChangeText={alCambiarDireccionServidor}
-      placeholder="ws://192.168.1.X:3000"
+      placeholder="192.168.1.X:3000"
       autoCapitalize="none"
       keyboardType="url"
       style={{

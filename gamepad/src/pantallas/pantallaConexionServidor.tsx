@@ -33,7 +33,10 @@ export function PantallaConexionServidor() {
         alCambiarDireccionServidor={setDireccionServidorJuegoWebSocket}
       />
       <Pressable
-        onPress={() => setConexionIniciada(true)}
+        onPress={() => { 
+          setDireccionServidorJuegoWebSocket(`ws://${direccionServidorJuegoWebSocket}`);
+          setConexionIniciada(true);
+        }}
         style={{
           backgroundColor: "#4F46E5",
           paddingHorizontal: 30,
