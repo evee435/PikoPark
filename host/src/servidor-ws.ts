@@ -34,6 +34,7 @@ export function iniciarServidorWS(puerto: number) {
 
   wss.on('connection', (socket: WebSocket) => {
     const idSocket = generarId();
+    console.log(`Cliente conectado - ID: ${idSocket}`);
 
     const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
     if (jugadoresConectados.length >= MAX_JUGADORES) {
@@ -104,6 +105,7 @@ export function iniciarServidorWS(puerto: number) {
           estado.llaveEnJuego   = true;
           estado.llaveRecogida  = false;
         }
+                console.log(`Cliente desconectado - ${jugador.nombre} (ID: ${idSocket})`);
         broadcast(wss, { tipo: 'jugador-desconectado', id: idSocket, nombre: jugador.nombre });
       }
       inputsActivos.delete(idSocket);
