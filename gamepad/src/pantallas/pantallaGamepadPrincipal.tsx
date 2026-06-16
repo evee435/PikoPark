@@ -1,6 +1,8 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View } from "react-native";
+import { View, Text, useWindowDimensions } from "react-native";
 import { useKeepAwake } from "expo-keep-awake";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { useEffect } from "react";
 import { useConexionWebSocketJuego } from "../hooks/useConexionWebSocket";
 import { IndicadorEstadoConexion } from "../componentes/conexiones/indicadorEstadoConexion";
 import { BotonMoverIzquierda } from "../componentes/botones/botonMoverIzquierda";
@@ -13,28 +15,98 @@ interface Props {
 
 export function PantallaGamepadPrincipal({ direccionServidorJuegoWebSocket }: Props) {
   useKeepAwake();
+  const { width, height } = useWindowDimensions();
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+    };
+  }, []);
 
   const {
-    servidorJuegoConectado,
-    errorConexionServidor,
-    enviarEventoMovimientoJugador,
-  } = useConexionWebSocketJuego({
-    direccionServidorWebSocket: direccionServidorJuegoWebSocket,
-  });
+  servidorJuegoConectado,
+  conectando,
+  errorConexionServidor,
+  enviarEventoMovimientoJugador,
+} = useConexionWebSocketJuego({
+  direccionServidorWebSocket: direccionServidorJuegoWebSocket,
+});
 
+if (conectando) {
   return (
-    <SafeAreaView style={{ flex: 1, justifyContent: "space-between", padding: 30 }}>
-      <IndicadorEstadoConexion conexionActiva={servidorJuegoConectado} />
-
-      <View
+    <SafeAreaView
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Text
         style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          flex: 1,
+          fontSize: 20,
+          fontWeight: "bold",
         }}
       >
-        <View style={{ flexDirection: "row", gap: 20 }}>
+        Conectando...
+      </Text>
+    </SafeAreaView>
+  );
+}
+
+if (!servidorJuegoConectado) {
+  return (
+    <SafeAreaView
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
+      <View
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          backgroundColor: "red",
+        }}
+      />
+      <Text
+        style={{
+          fontSize: 18,
+          fontWeight: "bold",
+          color: "red",
+        }}
+      >
+        DESCONECTADO
+      </Text>
+
+      {errorConexionServidor && (
+        <Text style={{ fontSize: 13, color: "#888" }}>
+          {errorConexionServidor}
+        </Text>
+      )}
+    </SafeAreaView>
+  );
+}
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffffff" }}>
+      <View style={{
+         flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    paddingHorizontal: 40,
+    paddingBottom: 40,
+      }}>
+
+        <View style={{ position: "absolute", top: 16, left: 16 }}>
+          <IndicadorEstadoConexion conexionActiva={servidorJuegoConectado} />
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
           <BotonMoverIzquierda
             alPresionar={() => enviarEventoMovimientoJugador("izquierda", "presionado")}
             alSoltar={() => enviarEventoMovimientoJugador("izquierda", "soltado")}
@@ -43,8 +115,8 @@ export function PantallaGamepadPrincipal({ direccionServidorJuegoWebSocket }: Pr
             alPresionar={() => enviarEventoMovimientoJugador("derecha", "presionado")}
             alSoltar={() => enviarEventoMovimientoJugador("derecha", "soltado")}
           />
+          
         </View>
-
         <BotonSaltar
           alPresionar={() => enviarEventoMovimientoJugador("salto", "presionado")}
           alSoltar={() => enviarEventoMovimientoJugador("salto", "soltado")}

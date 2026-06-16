@@ -11,7 +11,7 @@ export function BotonSaltar({ alPresionar, alSoltar }: Props) {
       onPressIn={alPresionar}
       onPressOut={alSoltar}
       style={{
-        backgroundColor: "#EF4444",
+        backgroundColor: "#808786ff",
         width: 100,
         height: 100,
         borderRadius: 50,

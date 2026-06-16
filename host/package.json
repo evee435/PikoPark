@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "bun src/index.ts",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "cliente": "vite"
   },
   "keywords": [],
   "author": "",
@@ -15,13 +16,19 @@
   "dependencies": {
     "matter-js": "^0.20.0",
     "qrcode-terminal": "^0.12.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.0.16",
     "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/matter-js": "^0.20.2",
     "@types/node": "^25.9.1",
     "@types/qrcode-terminal": "^0.12.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^6.0.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"

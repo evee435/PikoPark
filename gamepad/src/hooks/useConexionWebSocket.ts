@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EstadoBotonControl, MensajeMovimientoJugador } from "../tipos/tiposMensajesWebSocket";
+import {EstadoBotonControl, MensajeMovimientoJugador} from "../tipos/tiposMensajesWebSocket";
 import { DireccionMovimientoJugador } from "../tipos/tiposDireccionMovimiento";
 
 interface ParametrosConexionWebSocketJuego {
@@ -10,26 +10,41 @@ export function useConexionWebSocketJuego({
   direccionServidorWebSocket,
 }: ParametrosConexionWebSocketJuego) {
   const referenciaConexionWebSocket = useRef<WebSocket | null>(null);
-  const [servidorJuegoConectado, setServidorJuegoConectado] = useState(false);
-  const [errorConexionServidor, setErrorConexionServidor] = useState<string | null>(null);
+
+  const [servidorJuegoConectado, setServidorJuegoConectado] =
+    useState(false);
+  const [conectando, setConectando] = useState(false);
+  const [errorConexionServidor, setErrorConexionServidor] =
+    useState<string | null>(null);
 
   useEffect(() => {
     if (!direccionServidorWebSocket) return;
 
-    const conexionWebSocket = new WebSocket(direccionServidorWebSocket);
+    setConectando(true);
+    setErrorConexionServidor(null);
+
+    const conexionWebSocket = new WebSocket(
+      direccionServidorWebSocket
+    );
     referenciaConexionWebSocket.current = conexionWebSocket;
 
     conexionWebSocket.onopen = () => {
       setServidorJuegoConectado(true);
+      setConectando(false);
       setErrorConexionServidor(null);
     };
 
     conexionWebSocket.onclose = () => {
       setServidorJuegoConectado(false);
+      setConectando(false);
     };
 
     conexionWebSocket.onerror = () => {
-      setErrorConexionServidor("No fue posible conectarse al servidor");
+      setServidorJuegoConectado(false);
+      setConectando(false);
+      setErrorConexionServidor(
+        "No fue posible conectarse al servidor"
+      );
     };
 
     return () => {
@@ -42,6 +57,8 @@ export function useConexionWebSocketJuego({
     estadoBotonControl: EstadoBotonControl
   ) {
     if (!referenciaConexionWebSocket.current) return;
+    if (referenciaConexionWebSocket.current.readyState !== WebSocket.OPEN)
+      return;
 
     const mensajeMovimientoJugador: MensajeMovimientoJugador = {
       tipo: "input",
@@ -49,11 +66,14 @@ export function useConexionWebSocketJuego({
       estado: estadoBotonControl,
     };
 
-    referenciaConexionWebSocket.current.send(JSON.stringify(mensajeMovimientoJugador));
+    referenciaConexionWebSocket.current.send(
+      JSON.stringify(mensajeMovimientoJugador)
+    );
   }
 
   return {
     servidorJuegoConectado,
+    conectando,
     errorConexionServidor,
     enviarEventoMovimientoJugador,
   };

@@ -23,95 +23,95 @@ export function iniciarServidorWS(puerto: number) {
   console.log(`Servidor WebSocket corriendo en puerto ${puerto}`);
 
   setInterval(() => {
-    if (estado.fase !== 'jugando') return;
-
-    motorActual.actualizar();
-    
+  console.log('Fase actual:', estado.fase);
+    if (estado.fase === 'jugando') {
     procesarInputs(estado, motorActual.motor);
     verificarColisiones(estado, motorActual);
-    enviarEstadoATodos(wss, estado);
-  }, 1000 / 30);
+  }
+  enviarEstadoATodos(wss, estado); 
+}, 1000 / 30);
+
 
   wss.on('connection', (socket: WebSocket) => {
-    const idSocket = generarId();
+  const idSocket = generarId();
 
-    const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
-    if (jugadoresConectados.length >= MAX_JUGADORES) {
-      socket.send(JSON.stringify({ tipo: 'error', mensaje: 'Juego lleno (máximo 4 jugadores)' }));
-      socket.close();
-      return;
-    }
+  socket.once('message', (datos: Buffer) => {
+    try {
+      const mensaje = JSON.parse(datos.toString());
+      if (mensaje.tipo !== 'identificacion' || mensaje.rol !== 'jugador') return;
 
-    const indice  = estado.jugadores.size % CONFIGS_JUGADORES.length;
-    const config  = CONFIGS_JUGADORES[indice];
-    const nivel   = NIVELES[estado.nivelActual - 1];
-    const posInicial = nivel.posicionesIniciales[indice];
-    const cuerpo  = crearCuerpoJugador(posInicial.x, posInicial.y, idSocket);
-    Matter.World.add(motorActual.mundo, cuerpo);
+      const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
+      if (jugadoresConectados.length >= MAX_JUGADORES) {
+        socket.send(JSON.stringify({ tipo: 'error', mensaje: 'Juego lleno (máximo 4 jugadores)' }));
+        socket.close();
+        return;
+      }
 
-    estado.jugadores.set(idSocket, {
-      id:            idSocket,
-      nombre:        config.nombre,
-      color:         config.color,
-      cuerpofisico:  cuerpo,
-      cargandoLlave: false,
-      conectado:     true,
-    });
+      const indice  = estado.jugadores.size % CONFIGS_JUGADORES.length;
+      const config  = CONFIGS_JUGADORES[indice];
+      const nivel   = NIVELES[estado.nivelActual - 1];
+      const posInicial = nivel.posicionesIniciales[indice];
+      const cuerpo  = crearCuerpoJugador(posInicial.x, posInicial.y, idSocket);
+      Matter.World.add(motorActual.mundo, cuerpo);
 
-    inputsActivos.set(idSocket, new Set());
-
-    socket.send(JSON.stringify({
-      tipo:   'bienvenida',
-      id:     idSocket,
-      nombre: config.nombre,
-      color:  config.color,
-    }));
-
-    if ([...estado.jugadores.values()].filter(j => j.conectado).length === MAX_JUGADORES) {
-      estado.fase = 'jugando';
-      broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
-    } else {
-      broadcast(wss, {
-        tipo: 'lobby-actualizado',
-        jugadoresConectados: contarJugadores(estado),
-        esperando: MAX_JUGADORES - contarJugadores(estado),
+      estado.jugadores.set(idSocket, {
+        id:            idSocket,
+        nombre:        config.nombre,
+        color:         config.color,
+        cuerpofisico:  cuerpo,
+        cargandoLlave: false,
+        conectado:     true,
       });
-    }
 
-    socket.on('message', (datos: Buffer) => {
-      try {
-        const mensaje: MensajeInput = JSON.parse(datos.toString());
-        if (mensaje.tipo !== 'input') return;
-        const inputs = inputsActivos.get(idSocket);
-        if (!inputs) return;
-        if (mensaje.estado === 'presionado') {
-          inputs.add(mensaje.direccion);
-        } else {
-          inputs.delete(mensaje.direccion);
-        }
-      } catch {
- 
-      }
-    });
+      inputsActivos.set(idSocket, new Set());
+      console.log(`✅ ${config.nombre} conectado (ID: ${idSocket})`);
 
-    socket.on('close', () => {
-      const jugador = estado.jugadores.get(idSocket);
-      if (jugador) {
-        jugador.conectado = false;
-        Matter.World.remove(motorActual.mundo, jugador.cuerpofisico);
-        if (jugador.cargandoLlave) {
-          jugador.cargandoLlave = false;
-          estado.llaveEnJuego   = true;
-          estado.llaveRecogida  = false;
-        }
-        broadcast(wss, { tipo: 'jugador-desconectado', id: idSocket, nombre: jugador.nombre });
+      socket.send(JSON.stringify({ tipo: 'bienvenida', id: idSocket, nombre: config.nombre, color: config.color }));
+
+      if ([...estado.jugadores.values()].filter(j => j.conectado).length === MAX_JUGADORES) {
+        estado.fase = 'jugando';
+        broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
+      } else {
+        broadcast(wss, {
+          tipo: 'lobby-actualizado',
+          jugadoresConectados: contarJugadores(estado),
+          esperando: MAX_JUGADORES - contarJugadores(estado),
+        });
       }
-      inputsActivos.delete(idSocket);
-    });
+
+      socket.on('message', (datos: Buffer) => {
+        try {
+          const msg: MensajeInput = JSON.parse(datos.toString());
+          console.log('Input recibido:', msg); // agregá esto para ver los inputs que llegan
+          if (msg.tipo !== 'input') return;
+          const inputs = inputsActivos.get(idSocket);
+          if (!inputs) return;
+          if (msg.estado === 'presionado') inputs.add(msg.direccion);
+          else inputs.delete(msg.direccion);
+        } catch {}
+      });
+
+      socket.on('close', () => {
+        const jugador = estado.jugadores.get(idSocket);
+        if (jugador) {
+          jugador.conectado = false;
+          Matter.World.remove(motorActual.mundo, jugador.cuerpofisico);
+          if (jugador.cargandoLlave) {
+            jugador.cargandoLlave = false;
+            estado.llaveEnJuego   = true;
+            estado.llaveRecogida  = false;
+          }
+          console.log(`❌ ${jugador.nombre} desconectado`);
+          broadcast(wss, { tipo: 'jugador-desconectado', id: idSocket, nombre: jugador.nombre });
+        }
+        inputsActivos.delete(idSocket);
+      });
+
+     } catch {}
   });
+});
 
-  return wss;
-}
+} 
 
 function procesarInputs(estado: EstadoJuego, motor: Matter.Engine): void {
   for (const [id, jugador] of estado.jugadores) {

@@ -11,12 +11,11 @@ export function BotonMoverDerecha({ alPresionar, alSoltar }: Props) {
       onPressIn={alPresionar}
       onPressOut={alSoltar}
       style={{
-        backgroundColor: "#F59E0B",
+        backgroundColor: "#808786ff",
         padding: 30,
         borderRadius: 20,
       }}
     >
-      <Text>➡️</Text>
     </Pressable>
   );
 }
