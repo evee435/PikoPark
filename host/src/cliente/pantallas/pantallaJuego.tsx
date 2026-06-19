@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { EstadoJuegoCliente } from '../hooks/useWebSocket';
-import { NIVEL_1 } from '../../niveles';
+import { NIVELES } from '../../niveles';
 
 export function PantallaJuego({ estado }: { estado: EstadoJuegoCliente }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -11,7 +11,7 @@ export function PantallaJuego({ estado }: { estado: EstadoJuegoCliente }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const nivel = NIVEL_1;
+    const nivel = NIVELES[(estado.nivelActual ?? 1) - 1];
     const escalaX = canvas.width  / nivel.anchoMundo;
     const escalaY = canvas.height / nivel.altoMundo;
 

@@ -11,11 +11,12 @@ export interface JugadorEstado {
 }
 
 export interface EstadoJuegoCliente {
-  fase:          'lobby' | 'jugando' | 'nivel-completado';
+  fase:          'lobby' | 'jugando' | 'nivel-completado' | 'cambiando-nivel';
   jugadores:     JugadorEstado[];
   llaveEnJuego:  boolean;
   llaveRecogida: boolean;
   cajas:         { x: number; y: number }[]; 
+  nivelActual:   number;
 }
 
 export function useWebSocket(url: string) {

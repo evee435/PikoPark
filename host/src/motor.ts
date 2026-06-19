@@ -4,7 +4,7 @@ import type { ConfigNivel } from './niveles.ts';
 const { Engine, Bodies, Body, World } = Matter;
 
 const VELOCIDAD_MOVIMIENTO = 5;
-const FUERZA_SALTO         = -0.04;
+const FUERZA_SALTO         = -0.020;
 const MASA_JUGADOR         = 1;
 
 export interface MotorFisico {
@@ -97,7 +97,6 @@ World.add(mundo, techo);
     cuerposPuerta,
 
     actualizar: () => {
-      Engine.update(motor, 1000 / 60);
     },
 
     destruir: () => {
@@ -147,13 +146,16 @@ export function aplicarMovimiento(
 
 export function estaEnSuelo(cuerpo: Matter.Body, motor: Matter.Engine): boolean {
   const cuerpos = Matter.Composite.allBodies(motor.world);
-  const puntoAbajo = {
-    x: cuerpo.position.x,
-    y: cuerpo.position.y + 31,
-  };
+  const margen = 5; // margen para considerar que está en el suelo
+
 
   return cuerpos.some((otro) => {
-    if (otro === cuerpo || !otro.isStatic) return false;
+    if (otro === cuerpo) return false; // remové el !otro.isStatic para detectar cajas también
+
+    const puntoAbajo = {
+      x: cuerpo.position.x,
+      y: cuerpo.position.y + 31 + margen,
+    };
     return Matter.Bounds.contains(otro.bounds, puntoAbajo);
   });
 }

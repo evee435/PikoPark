@@ -1,6 +1,6 @@
 import type Matter from 'matter-js';
 
-export type FaseJuego = 'lobby' | 'jugando' | 'nivel-completado';
+export type FaseJuego = 'lobby' | 'jugando' | 'nivel-completado' | 'cambiando-nivel';
 
 export interface Jugador {
   id:            string;

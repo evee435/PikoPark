@@ -20,122 +20,119 @@ export function iniciarServidorWS(puerto: number) {
   const estado: EstadoJuego = crearEstadoInicial();
   let motorActual = crearMotorFisico(NIVELES[0]);
 
-  //console.log(`Servidor WebSocket corriendo en puerto ${puerto}`);
-
   setInterval(() => {
     if (estado.fase === 'jugando') {
-    procesarInputs(estado, motorActual.motor);
-    Matter.Engine.update(motorActual.motor, 1000 / 30); 
-    verificarColisiones(estado, motorActual);
-  }
-
-   if (estado.fase === 'nivel-completado') {
-    if (estado.nivelActual < NIVELES.length) {
-      estado.nivelActual++;
-      motorActual.destruir();
-      motorActual = crearMotorFisico(NIVELES[estado.nivelActual - 1]);
-      
-      // reposicionar jugadores en el nuevo nivel
-      for (const [i, jugador] of [...estado.jugadores.values()].filter(j => j.conectado).entries()) {
-        const pos = NIVELES[estado.nivelActual - 1].posicionesIniciales[i];
-        Matter.Body.setPosition(jugador.cuerpofisico, pos);
-        Matter.Body.setVelocity(jugador.cuerpofisico, { x: 0, y: 0 });
-        Matter.World.add(motorActual.mundo, jugador.cuerpofisico);
-        jugador.cargandoLlave = false;
-      }
-
-      estado.llaveRecogida = false;
-      estado.llaveEnJuego  = true;
-      estado.fase          = 'jugando';
-      broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
+      procesarInputs(estado, motorActual.motor);
+      Matter.Engine.update(motorActual.motor, 1000 / 30);
+      verificarColisiones(estado, motorActual);
     }
-  }
 
+    if (estado.fase === 'nivel-completado') {
+      if (estado.nivelActual < NIVELES.length) {
+        estado.fase = 'cambiando-nivel' as any;
+        setTimeout(() => {
+          estado.nivelActual++;
+          motorActual.destruir();
+          motorActual = crearMotorFisico(NIVELES[estado.nivelActual - 1]);
 
-  enviarEstadoATodos(wss, estado, motorActual); 
-}, 1000 / 30);
+          const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
+          jugadoresConectados.forEach((jugador, i) => {
+            const pos = NIVELES[estado.nivelActual - 1].posicionesIniciales[i];
+            const nuevoCuerpo = crearCuerpoJugador(pos.x, pos.y, jugador.id);
+            Matter.World.add(motorActual.mundo, nuevoCuerpo);
+            jugador.cuerpofisico = nuevoCuerpo;
+            jugador.cargandoLlave = false;
+          });
 
+          estado.llaveRecogida = false;
+          estado.llaveEnJuego  = true;
+          estado.fase          = 'jugando';
+          broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
+        }, 3000);
+      }
+    }
+
+    enviarEstadoATodos(wss, estado, motorActual);
+  }, 1000 / 30);
 
   wss.on('connection', (socket: WebSocket) => {
-  const idSocket = generarId();
+    const idSocket = generarId();
 
-  socket.once('message', (datos: Buffer) => {
-    try {
-      const mensaje = JSON.parse(datos.toString());
-      if (mensaje.tipo !== 'identificacion' || mensaje.rol !== 'jugador') return;
+    socket.once('message', (datos: Buffer) => {
+      try {
+        const mensaje = JSON.parse(datos.toString());
+        if (mensaje.tipo !== 'identificacion' || mensaje.rol !== 'jugador') return;
 
-      const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
-      if (jugadoresConectados.length >= MAX_JUGADORES) {
-        socket.send(JSON.stringify({ tipo: 'error', mensaje: 'Juego lleno (máximo 4 jugadores)' }));
-        socket.close();
-        return;
-      }
-
-const indice = [...estado.jugadores.values()].filter(j => j.conectado).length % CONFIGS_JUGADORES.length;
-      const config  = CONFIGS_JUGADORES[indice];
-      const nivel   = NIVELES[estado.nivelActual - 1];
-      const posInicial = nivel.posicionesIniciales[indice];
-      const cuerpo  = crearCuerpoJugador(posInicial.x, posInicial.y, idSocket);
-      Matter.World.add(motorActual.mundo, cuerpo);
-
-      estado.jugadores.set(idSocket, {
-        id:            idSocket,
-        nombre:        config.nombre,
-        color:         config.color,
-        cuerpofisico:  cuerpo,
-        cargandoLlave: false,
-        conectado:     true,
-      });
-
-      inputsActivos.set(idSocket, new Set());
-      console.log(`✅ ${config.nombre} conectado (ID: ${idSocket})`);
-
-      socket.send(JSON.stringify({ tipo: 'bienvenida', id: idSocket, nombre: config.nombre, color: config.color }));
-
-      if ([...estado.jugadores.values()].filter(j => j.conectado).length >= 1) {
-        estado.fase = 'jugando';
-        broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
-      } else {
-        broadcast(wss, {
-          tipo: 'lobby-actualizado',
-          jugadoresConectados: contarJugadores(estado),
-          esperando: MAX_JUGADORES - contarJugadores(estado),
-        });
-      }
-
-      socket.on('message', (datos: Buffer) => {
-        try {
-          const msg: MensajeInput = JSON.parse(datos.toString());
-          console.log('Input recibido:', msg); // agregá esto para ver los inputs que llegan
-          if (msg.tipo !== 'input') return;
-          const inputs = inputsActivos.get(idSocket);
-          if (!inputs) return;
-          if (msg.estado === 'presionado') inputs.add(msg.direccion);
-          else inputs.delete(msg.direccion);
-        } catch {}
-      });
-
-      socket.on('close', () => {
-        const jugador = estado.jugadores.get(idSocket);
-        if (jugador) {
-          jugador.conectado = false;
-          Matter.World.remove(motorActual.mundo, jugador.cuerpofisico);
-          if (jugador.cargandoLlave) {
-            jugador.cargandoLlave = false;
-            estado.llaveEnJuego   = true;
-            estado.llaveRecogida  = false;
-          }
-          console.log(`❌ ${jugador.nombre} desconectado`);
-          broadcast(wss, { tipo: 'jugador-desconectado', id: idSocket, nombre: jugador.nombre });
+        const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
+        if (jugadoresConectados.length >= MAX_JUGADORES) {
+          socket.send(JSON.stringify({ tipo: 'error', mensaje: 'Juego lleno (máximo 4 jugadores)' }));
+          socket.close();
+          return;
         }
-        inputsActivos.delete(idSocket);
-      });
 
-     } catch {}
+        const indice = [...estado.jugadores.values()].filter(j => j.conectado).length % CONFIGS_JUGADORES.length;
+        const config  = CONFIGS_JUGADORES[indice];
+        const nivel   = NIVELES[estado.nivelActual - 1];
+        const posInicial = nivel.posicionesIniciales[indice];
+        const cuerpo  = crearCuerpoJugador(posInicial.x, posInicial.y, idSocket);
+        Matter.World.add(motorActual.mundo, cuerpo);
+
+        estado.jugadores.set(idSocket, {
+          id:            idSocket,
+          nombre:        config.nombre,
+          color:         config.color,
+          cuerpofisico:  cuerpo,
+          cargandoLlave: false,
+          conectado:     true,
+        });
+
+        inputsActivos.set(idSocket, new Set());
+        console.log(`✅ ${config.nombre} conectado (ID: ${idSocket})`);
+
+        socket.send(JSON.stringify({ tipo: 'bienvenida', id: idSocket, nombre: config.nombre, color: config.color }));
+
+        if ([...estado.jugadores.values()].filter(j => j.conectado).length >= 1) {
+          estado.fase = 'jugando';
+          broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
+        } else {
+          broadcast(wss, {
+            tipo: 'lobby-actualizado',
+            jugadoresConectados: contarJugadores(estado),
+            esperando: MAX_JUGADORES - contarJugadores(estado),
+          });
+        }
+
+        socket.on('message', (datos: Buffer) => {
+          try {
+            const msg: MensajeInput = JSON.parse(datos.toString());
+            if (msg.tipo !== 'input') return;
+            const inputs = inputsActivos.get(idSocket);
+            if (!inputs) return;
+            if (msg.estado === 'presionado') inputs.add(msg.direccion);
+            else inputs.delete(msg.direccion);
+          } catch {}
+        });
+
+        socket.on('close', () => {
+          const jugador = estado.jugadores.get(idSocket);
+          if (jugador) {
+            jugador.conectado = false;
+            Matter.World.remove(motorActual.mundo, jugador.cuerpofisico);
+            if (jugador.cargandoLlave) {
+              jugador.cargandoLlave = false;
+              estado.llaveEnJuego   = true;
+              estado.llaveRecogida  = false;
+            }
+            console.log(`❌ ${jugador.nombre} desconectado`);
+            broadcast(wss, { tipo: 'jugador-desconectado', id: idSocket, nombre: jugador.nombre });
+          }
+          inputsActivos.delete(idSocket);
+        });
+
+      } catch {}
+    });
   });
-});
-
-} 
+}
 
 function procesarInputs(estado: EstadoJuego, motor: Matter.Engine): void {
   for (const [id, jugador] of estado.jugadores) {
@@ -143,7 +140,6 @@ function procesarInputs(estado: EstadoJuego, motor: Matter.Engine): void {
     const inputs  = inputsActivos.get(id) ?? new Set();
     const enSuelo = estaEnSuelo(jugador.cuerpofisico, motor);
 
-    // movimiento horizontal independiente del salto
     if (inputs.has('izquierda')) {
       aplicarMovimiento(jugador.cuerpofisico, 'izquierda', enSuelo);
     } else if (inputs.has('derecha')) {
@@ -152,12 +148,13 @@ function procesarInputs(estado: EstadoJuego, motor: Matter.Engine): void {
       aplicarMovimiento(jugador.cuerpofisico, 'ninguna', enSuelo);
     }
 
-    // salto independiente del movimiento horizontal
-    if (inputs.has('salto')) {
+if (inputs.has('salto') && enSuelo) {
       aplicarMovimiento(jugador.cuerpofisico, 'salto', enSuelo);
+        inputs.delete('salto'); // elimina el input después de aplicarlo
     }
   }
 }
+
 function verificarColisiones(estado: EstadoJuego, motor: MotorFisico): void {
   for (const jugador of estado.jugadores.values()) {
     if (!jugador.conectado) continue;
@@ -179,20 +176,20 @@ function verificarColisiones(estado: EstadoJuego, motor: MotorFisico): void {
       jugador.cargandoLlave = false;
       estado.llaveRecogida  = false;
       estado.llaveEnJuego   = true;
-    const llaveNueva = Matter.Bodies.circle(
-    nivel.posicionLlave.x,
-    nivel.posicionLlave.y,
-    15,
-    { label: 'llave', isStatic: true, collisionFilter: { mask: 0x0002 } }
-  );
-  Matter.World.add(motor.mundo, llaveNueva);
-  motor.cuerpoLlave = llaveNueva;
-}
+      const llaveNueva = Matter.Bodies.circle(
+        nivel.posicionLlave.x,
+        nivel.posicionLlave.y,
+        15,
+        { label: 'llave', isStatic: true, collisionFilter: { mask: 0x0002 } }
+      );
+      Matter.World.add(motor.mundo, llaveNueva);
+      motor.cuerpoLlave = llaveNueva;
+    }
+  }
 
   if (estado.llaveRecogida) {
     verificarCondicionVictoria(estado, motor);
   }
-}
 }
 
 function verificarCondicionVictoria(estado: EstadoJuego, motor: MotorFisico): void {
@@ -200,12 +197,11 @@ function verificarCondicionVictoria(estado: EstadoJuego, motor: MotorFisico): vo
   if (!puerta) return;
 
   const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
-  
-  if (jugadoresConectados.length < 1) return; //temporalmente, solo para probar el nivel 2
+  if (jugadoresConectados.length < 1) return;
 
-  const todosEnPuerta = [...estado.jugadores.values()]
-    .filter(j => j.conectado)
-    .every(j => Matter.Bounds.contains(puerta.bounds, j.cuerpofisico.position));
+  const todosEnPuerta = jugadoresConectados.every(j =>
+    Matter.Bounds.contains(puerta.bounds, j.cuerpofisico.position)
+  );
 
   if (todosEnPuerta) {
     estado.fase = 'nivel-completado';
@@ -216,10 +212,12 @@ function enviarEstadoATodos(wss: WebSocketServer, estado: EstadoJuego, motor: Mo
   const cajas = Matter.Composite.allBodies(motor.motor.world)
     .filter(b => b.label === 'caja')
     .map(b => ({ x: b.position.x, y: b.position.y }));
+
   const snapshot = {
-    tipo:      'estado',
-    fase:      estado.fase,
-    jugadores: [...estado.jugadores.values()].map(j => ({
+    tipo:         'estado',
+    fase:         estado.fase,
+    nivelActual:  estado.nivelActual,
+    jugadores:    [...estado.jugadores.values()].map(j => ({
       id:            j.id,
       nombre:        j.nombre,
       color:         j.color,

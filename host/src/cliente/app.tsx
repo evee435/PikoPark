@@ -16,7 +16,9 @@ export function App() {
 
   if (estado.fase === 'lobby') return <PantallaLobby estado={estado} />;
   if (estado.fase === 'jugando') return <PantallaJuego estado={estado} />;
-  if (estado.fase === 'nivel-completado') return <PantallaNivelCompletado />;
+  if (estado.fase === 'nivel-completado' || estado.fase === 'cambiando-nivel')
+   return <PantallaNivelCompletado />;
+
 
   return null;
 }
