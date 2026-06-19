@@ -4,7 +4,7 @@ import type { ConfigNivel } from './niveles.ts';
 const { Engine, Bodies, Body, World, Runner } = Matter;
 
 const VELOCIDAD_MOVIMIENTO = 5;
-const FUERZA_SALTO         = -0.015;
+const FUERZA_SALTO         = -0.04;
 const MASA_JUGADOR         = 1;
 
 export interface MotorFisico {
@@ -32,6 +32,19 @@ export function crearMotorFisico(nivel: ConfigNivel): MotorFisico {
   );
 
   World.add(mundo, cuerposPlataformas);
+
+  const techo = Bodies.rectangle(
+  1000, // centro del mapa en X
+  -25,  // un poco por encima de y = 0
+  2000, // ancho del mapa
+  50,   // grosor del techo
+  {
+    isStatic: true,
+    label: 'techo',
+  }
+);
+
+World.add(mundo, techo);
 
   const cuerpoLlave = Bodies.circle(
     nivel.posicionLlave.x,
@@ -69,7 +82,7 @@ export function crearMotorFisico(nivel: ConfigNivel): MotorFisico {
     cuerposPuerta,
 
     actualizar: () => {
-      Engine.update(motor, 1000 / 30);
+      Engine.update(motor, 1000 / 60);
     },
 
     destruir: () => {
@@ -83,7 +96,7 @@ export function crearCuerpoJugador(x: number, y: number, id: string): Matter.Bod
   return Bodies.rectangle(x, y, 40, 60, {
     label: `jugador-${id}`,
     friction: 0.5,
-    frictionAir: 0.1,
+    frictionAir: 0.01,
     mass: MASA_JUGADOR,
     inertia: Infinity,
     collisionFilter: {

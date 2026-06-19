@@ -20,12 +20,13 @@ export function iniciarServidorWS(puerto: number) {
   const estado: EstadoJuego = crearEstadoInicial();
   let motorActual = crearMotorFisico(NIVELES[0]);
 
-  console.log(`Servidor WebSocket corriendo en puerto ${puerto}`);
+  //console.log(`Servidor WebSocket corriendo en puerto ${puerto}`);
 
   setInterval(() => {
-  console.log('Fase actual:', estado.fase);
+  //console.log('Fase actual:', estado.fase);
     if (estado.fase === 'jugando') {
     procesarInputs(estado, motorActual.motor);
+    Matter.Engine.update(motorActual.motor, 1000 / 30); 
     verificarColisiones(estado, motorActual);
   }
   enviarEstadoATodos(wss, estado); 
@@ -47,7 +48,7 @@ export function iniciarServidorWS(puerto: number) {
         return;
       }
 
-      const indice  = estado.jugadores.size % CONFIGS_JUGADORES.length;
+const indice = [...estado.jugadores.values()].filter(j => j.conectado).length % CONFIGS_JUGADORES.length;
       const config  = CONFIGS_JUGADORES[indice];
       const nivel   = NIVELES[estado.nivelActual - 1];
       const posInicial = nivel.posicionesIniciales[indice];
@@ -68,7 +69,7 @@ export function iniciarServidorWS(puerto: number) {
 
       socket.send(JSON.stringify({ tipo: 'bienvenida', id: idSocket, nombre: config.nombre, color: config.color }));
 
-      if ([...estado.jugadores.values()].filter(j => j.conectado).length === MAX_JUGADORES) {
+      if ([...estado.jugadores.values()].filter(j => j.conectado).length >= 1) {
         estado.fase = 'jugando';
         broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
       } else {
@@ -116,16 +117,24 @@ export function iniciarServidorWS(puerto: number) {
 function procesarInputs(estado: EstadoJuego, motor: Matter.Engine): void {
   for (const [id, jugador] of estado.jugadores) {
     if (!jugador.conectado) continue;
-    const inputs    = inputsActivos.get(id) ?? new Set();
-    const enSuelo   = estaEnSuelo(jugador.cuerpofisico, motor);
-    let   direccion: TipoInput = 'ninguna';
-    if (inputs.has('izquierda')) direccion = 'izquierda';
-    if (inputs.has('derecha'))   direccion = 'derecha';
-    if (inputs.has('salto'))     direccion = 'salto';
-    aplicarMovimiento(jugador.cuerpofisico, direccion, enSuelo);
+    const inputs  = inputsActivos.get(id) ?? new Set();
+    const enSuelo = estaEnSuelo(jugador.cuerpofisico, motor);
+
+    // movimiento horizontal independiente del salto
+    if (inputs.has('izquierda')) {
+      aplicarMovimiento(jugador.cuerpofisico, 'izquierda', enSuelo);
+    } else if (inputs.has('derecha')) {
+      aplicarMovimiento(jugador.cuerpofisico, 'derecha', enSuelo);
+    } else {
+      aplicarMovimiento(jugador.cuerpofisico, 'ninguna', enSuelo);
+    }
+
+    // salto independiente del movimiento horizontal
+    if (inputs.has('salto')) {
+      aplicarMovimiento(jugador.cuerpofisico, 'salto', enSuelo);
+    }
   }
 }
-
 function verificarColisiones(estado: EstadoJuego, motor: MotorFisico): void {
   for (const jugador of estado.jugadores.values()) {
     if (!jugador.conectado) continue;

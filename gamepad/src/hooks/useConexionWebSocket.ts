@@ -29,6 +29,7 @@ export function useConexionWebSocketJuego({
     referenciaConexionWebSocket.current = conexionWebSocket;
 
     conexionWebSocket.onopen = () => {
+      conexionWebSocket.send(JSON.stringify({ tipo: 'identificacion', rol: 'jugador' })); // agregá esto
       setServidorJuegoConectado(true);
       setConectando(false);
       setErrorConexionServidor(null);
