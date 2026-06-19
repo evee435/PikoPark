@@ -23,13 +23,36 @@ export function iniciarServidorWS(puerto: number) {
   //console.log(`Servidor WebSocket corriendo en puerto ${puerto}`);
 
   setInterval(() => {
-  //console.log('Fase actual:', estado.fase);
     if (estado.fase === 'jugando') {
     procesarInputs(estado, motorActual.motor);
     Matter.Engine.update(motorActual.motor, 1000 / 30); 
     verificarColisiones(estado, motorActual);
   }
-  enviarEstadoATodos(wss, estado); 
+
+   if (estado.fase === 'nivel-completado') {
+    if (estado.nivelActual < NIVELES.length) {
+      estado.nivelActual++;
+      motorActual.destruir();
+      motorActual = crearMotorFisico(NIVELES[estado.nivelActual - 1]);
+      
+      // reposicionar jugadores en el nuevo nivel
+      for (const [i, jugador] of [...estado.jugadores.values()].filter(j => j.conectado).entries()) {
+        const pos = NIVELES[estado.nivelActual - 1].posicionesIniciales[i];
+        Matter.Body.setPosition(jugador.cuerpofisico, pos);
+        Matter.Body.setVelocity(jugador.cuerpofisico, { x: 0, y: 0 });
+        Matter.World.add(motorActual.mundo, jugador.cuerpofisico);
+        jugador.cargandoLlave = false;
+      }
+
+      estado.llaveRecogida = false;
+      estado.llaveEnJuego  = true;
+      estado.fase          = 'jugando';
+      broadcast(wss, { tipo: 'juego-inicio', nivel: estado.nivelActual });
+    }
+  }
+
+
+  enviarEstadoATodos(wss, estado, motorActual); 
 }, 1000 / 30);
 
 
@@ -156,17 +179,29 @@ function verificarColisiones(estado: EstadoJuego, motor: MotorFisico): void {
       jugador.cargandoLlave = false;
       estado.llaveRecogida  = false;
       estado.llaveEnJuego   = true;
-    }
-  }
+    const llaveNueva = Matter.Bodies.circle(
+    nivel.posicionLlave.x,
+    nivel.posicionLlave.y,
+    15,
+    { label: 'llave', isStatic: true, collisionFilter: { mask: 0x0002 } }
+  );
+  Matter.World.add(motor.mundo, llaveNueva);
+  motor.cuerpoLlave = llaveNueva;
+}
 
   if (estado.llaveRecogida) {
     verificarCondicionVictoria(estado, motor);
   }
 }
+}
 
 function verificarCondicionVictoria(estado: EstadoJuego, motor: MotorFisico): void {
   const puerta = motor.cuerposPuerta[0];
   if (!puerta) return;
+
+  const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
+  
+  if (jugadoresConectados.length < 1) return; //temporalmente, solo para probar el nivel 2
 
   const todosEnPuerta = [...estado.jugadores.values()]
     .filter(j => j.conectado)
@@ -177,7 +212,10 @@ function verificarCondicionVictoria(estado: EstadoJuego, motor: MotorFisico): vo
   }
 }
 
-function enviarEstadoATodos(wss: WebSocketServer, estado: EstadoJuego): void {
+function enviarEstadoATodos(wss: WebSocketServer, estado: EstadoJuego, motor: MotorFisico): void {
+  const cajas = Matter.Composite.allBodies(motor.motor.world)
+    .filter(b => b.label === 'caja')
+    .map(b => ({ x: b.position.x, y: b.position.y }));
   const snapshot = {
     tipo:      'estado',
     fase:      estado.fase,
@@ -192,6 +230,7 @@ function enviarEstadoATodos(wss: WebSocketServer, estado: EstadoJuego): void {
     })),
     llaveEnJuego:  estado.llaveEnJuego,
     llaveRecogida: estado.llaveRecogida,
+    cajas,
   };
   broadcast(wss, snapshot);
 }

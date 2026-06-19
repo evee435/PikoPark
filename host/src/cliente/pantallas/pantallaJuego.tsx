@@ -30,6 +30,16 @@ export function PantallaJuego({ estado }: { estado: EstadoJuegoCliente }) {
       );
     });
 
+    ctx.fillStyle = '#8B4513';
+estado.cajas?.forEach(c => {
+  ctx.fillRect(
+    (c.x - 25) * escalaX,
+    (c.y - 25) * escalaY,
+    50 * escalaX,
+    50 * escalaY,
+  );
+});
+
     ctx.fillStyle = '#22c55e';
     ctx.fillRect(
       (nivel.posicionPuerta.x - 30) * escalaX,

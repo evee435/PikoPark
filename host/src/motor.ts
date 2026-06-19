@@ -1,7 +1,7 @@
 import Matter from 'matter-js';
 import type { ConfigNivel } from './niveles.ts';
 
-const { Engine, Bodies, Body, World, Runner } = Matter;
+const { Engine, Bodies, Body, World } = Matter;
 
 const VELOCIDAD_MOVIMIENTO = 5;
 const FUERZA_SALTO         = -0.04;
@@ -60,20 +60,35 @@ World.add(mundo, techo);
   World.add(mundo, cuerpoLlave);
 
   const cuerposPuerta = [
-    Bodies.rectangle(
-      nivel.posicionPuerta.x,
-      nivel.posicionPuerta.y,
-      60,
-      80,
-      {
-        isStatic: true,
-        isSensor: true,
-        label: 'puerta',
+  Bodies.rectangle(
+    nivel.posicionPuerta.x,
+    nivel.posicionPuerta.y,
+    60, 80,
+    { 
+      isStatic: true, 
+      isSensor: true, 
+      label: 'puerta',
+      restitution: 0,
+      collisionFilter: {
+        mask: 0x0000, // no colisiona con nada físicamente
       }
-    ),
-  ];
+    }
+  ),
+];
 
   World.add(mundo, cuerposPuerta);
+
+  if (nivel.cajas) {
+  nivel.cajas.forEach((c) => {
+    const caja = Bodies.rectangle(c.x, c.y, 50, 50, {
+      label: 'caja',
+      friction: 0.8,
+      restitution: 0,
+      mass: 5, // masa mayor que el jugador para que se note la diferencia de fuerza
+    });
+    World.add(mundo, caja);
+  });
+}
 
   return {
     motor,
@@ -99,6 +114,7 @@ export function crearCuerpoJugador(x: number, y: number, id: string): Matter.Bod
     frictionAir: 0.01,
     mass: MASA_JUGADOR,
     inertia: Infinity,
+    restitution: 0,
     collisionFilter: {
       category: 0x0002,
       mask: 0x0001 | 0x0002,

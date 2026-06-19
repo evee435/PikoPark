@@ -16,6 +16,8 @@ export interface ConfigNivel {
   posicionLlave: { x: number; y: number };
   posicionPuerta: { x: number; y: number };
   descripcion: string;
+  cajas?: { x: number; y: number }[]; // agregá esto
+
 }
 
 export const NIVEL_1: ConfigNivel = {
@@ -25,11 +27,13 @@ export const NIVEL_1: ConfigNivel = {
   altoMundo: 600,
   descripcion: 'Lleguen a la llave y lleven a todos a la salida.',
   plataformas: [
-    { x: 600,  y: 580, ancho: 1200, alto: 20, etiqueta: 'suelo' },
-    { x: 400,  y: 420, ancho: 200,  alto: 20, etiqueta: 'plataforma-media' },
-    { x: 900,  y: 300, ancho: 200,  alto: 20, etiqueta: 'plataforma-llave' },
-    { x: 0,    y: 300, ancho: 20,   alto: 600, etiqueta: 'pared-izquierda' },
-    { x: 1200, y: 300, ancho: 20,   alto: 600, etiqueta: 'pared-derecha' },
+    { x: 200,  y: 580, ancho: 400, alto: 20, etiqueta: 'suelo-izquierdo' },
+    { x: 950,  y: 580, ancho: 500, alto: 20, etiqueta: 'suelo-derecho' },
+    { x: 500,  y: 480, ancho: 120, alto: 20, etiqueta: 'plataforma-salto-1' },
+    { x: 650,  y: 400, ancho: 120, alto: 20, etiqueta: 'plataforma-salto-2' },
+    { x: 900,  y: 280, ancho: 200, alto: 20, etiqueta: 'plataforma-llave' },
+    { x: 0,    y: 300, ancho: 20,  alto: 600, etiqueta: 'pared-izquierda' },
+    { x: 1200, y: 300, ancho: 20,  alto: 600, etiqueta: 'pared-derecha' },
   ],
   posicionesIniciales: [
     { x: 100, y: 500 },
@@ -37,8 +41,13 @@ export const NIVEL_1: ConfigNivel = {
     { x: 200, y: 500 },
     { x: 250, y: 500 },
   ],
-  posicionLlave:  { x: 900,  y: 260 },
+  posicionLlave:  { x: 900,  y: 240 },
   posicionPuerta: { x: 1150, y: 520 },
+
+  cajas: [
+  { x: 300, y: 540 }, // caja en el suelo izquierdo, antes del hueco
+],
+
 };
 
 export const NIVEL_2: ConfigNivel = {

@@ -15,6 +15,7 @@ export interface EstadoJuegoCliente {
   jugadores:     JugadorEstado[];
   llaveEnJuego:  boolean;
   llaveRecogida: boolean;
+  cajas:         { x: number; y: number }[]; 
 }
 
 export function useWebSocket(url: string) {

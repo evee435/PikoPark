@@ -1,4 +1,4 @@
-import { Pressable, Text } from "react-native";
+import { Pressable, View } from "react-native";
 
 interface Props {
   alPresionar: () => void;
