@@ -148,9 +148,8 @@ function procesarInputs(estado: EstadoJuego, motor: Matter.Engine): void {
       aplicarMovimiento(jugador.cuerpofisico, 'ninguna', enSuelo);
     }
 
-if (inputs.has('salto') && enSuelo) {
+    if (inputs.has('salto')) {
       aplicarMovimiento(jugador.cuerpofisico, 'salto', enSuelo);
-        inputs.delete('salto'); // elimina el input después de aplicarlo
     }
   }
 }
@@ -160,30 +159,57 @@ function verificarColisiones(estado: EstadoJuego, motor: MotorFisico): void {
     if (!jugador.conectado) continue;
     const pos = jugador.cuerpofisico.position;
 
-    if (estado.llaveEnJuego && !estado.llaveRecogida && motor.cuerpoLlave) {
-      const posLlave  = motor.cuerpoLlave.position;
-      const distancia = Math.hypot(pos.x - posLlave.x, pos.y - posLlave.y);
+     if (estado.llaveEnJuego && !estado.llaveRecogida && motor.cuerpoLlave) {
+      const posLlave = motor.cuerpoLlave.position;
+      const distancia = Math.hypot(
+        pos.x - posLlave.x,
+        pos.y - posLlave.y
+      );
+
       if (distancia < 40) {
         jugador.cargandoLlave = true;
-        estado.llaveRecogida  = true;
-        estado.llaveEnJuego   = false;
-        Matter.World.remove(motor.mundo, motor.cuerpoLlave!);
+        estado.llaveRecogida = true;
+        estado.llaveEnJuego = false;
+        Matter.World.remove(motor.mundo, motor.cuerpoLlave);
       }
     }
 
     const nivel = NIVELES[estado.nivelActual - 1];
-    if (jugador.cargandoLlave && pos.y > nivel.altoMundo + 50) {
-      jugador.cargandoLlave = false;
-      estado.llaveRecogida  = false;
-      estado.llaveEnJuego   = true;
-      const llaveNueva = Matter.Bodies.circle(
-        nivel.posicionLlave.x,
-        nivel.posicionLlave.y,
-        15,
-        { label: 'llave', isStatic: true, collisionFilter: { mask: 0x0002 } }
-      );
-      Matter.World.add(motor.mundo, llaveNueva);
-      motor.cuerpoLlave = llaveNueva;
+    if (pos.y > nivel.altoMundo + 50) {
+      const indice =
+        [...estado.jugadores.keys()].indexOf(jugador.id) %
+        nivel.posicionesIniciales.length;
+
+      const posInicial = nivel.posicionesIniciales[indice];
+
+      Matter.Body.setPosition(jugador.cuerpofisico, posInicial);
+      Matter.Body.setVelocity(jugador.cuerpofisico, {
+        x: 0,
+        y: 0,
+      });
+
+      // Si tenía la llave, reaparece
+      if (jugador.cargandoLlave) {
+        jugador.cargandoLlave = false;
+        estado.llaveRecogida = false;
+        estado.llaveEnJuego = true;
+
+        const llaveNueva = Matter.Bodies.circle(
+          nivel.posicionLlave.x,
+          nivel.posicionLlave.y,
+          15,
+          {
+            label: 'llave',
+            isStatic: true,
+            collisionFilter: {
+              mask: 0x0002,
+            },
+          }
+        );
+
+        Matter.World.add(motor.mundo, llaveNueva);
+        motor.cuerpoLlave = llaveNueva;
+      }
     }
   }
 
@@ -197,7 +223,6 @@ function verificarCondicionVictoria(estado: EstadoJuego, motor: MotorFisico): vo
   if (!puerta) return;
 
   const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
-  if (jugadoresConectados.length < 1) return;
 
   const todosEnPuerta = jugadoresConectados.every(j =>
     Matter.Bounds.contains(puerta.bounds, j.cuerpofisico.position)
