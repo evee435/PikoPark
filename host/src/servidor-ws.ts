@@ -188,7 +188,7 @@ function verificarColisiones(estado: EstadoJuego, motor: MotorFisico): void {
         y: 0,
       });
 
-      // Si tenía la llave, reaparece
+
       if (jugador.cargandoLlave) {
         jugador.cargandoLlave = false;
         estado.llaveRecogida = false;
@@ -223,6 +223,7 @@ function verificarCondicionVictoria(estado: EstadoJuego, motor: MotorFisico): vo
   if (!puerta) return;
 
   const jugadoresConectados = [...estado.jugadores.values()].filter(j => j.conectado);
+
 
   const todosEnPuerta = jugadoresConectados.every(j =>
     Matter.Bounds.contains(puerta.bounds, j.cuerpofisico.position)

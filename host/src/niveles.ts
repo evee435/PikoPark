@@ -16,7 +16,7 @@ export interface ConfigNivel {
   posicionLlave: { x: number; y: number };
   posicionPuerta: { x: number; y: number };
   descripcion: string;
-  cajas?: { x: number; y: number }[]; // agregá esto
+  cajas?: { x: number; y: number }[]; 
 
 }
 
@@ -31,7 +31,7 @@ export const NIVEL_1: ConfigNivel = {
     { x: 950,  y: 580, ancho: 500, alto: 20, etiqueta: 'suelo-derecho' },
     { x: 500,  y: 480, ancho: 120, alto: 20, etiqueta: 'plataforma-salto-1' },
     { x: 650,  y: 400, ancho: 120, alto: 20, etiqueta: 'plataforma-salto-2' },
-    { x: 900,  y: 280, ancho: 200, alto: 20, etiqueta: 'plataforma-llave' },
+    { x: 900,  y: 290, ancho: 200, alto: 20, etiqueta: 'plataforma-llave' },
     { x: 0,    y: 300, ancho: 20,  alto: 600, etiqueta: 'pared-izquierda' },
     { x: 1200, y: 300, ancho: 20,  alto: 600, etiqueta: 'pared-derecha' },
   ],
@@ -44,10 +44,6 @@ export const NIVEL_1: ConfigNivel = {
   posicionLlave:  { x: 900,  y: 240 },
   posicionPuerta: { x: 1150, y: 520 },
 
-  cajas: [
-  { x: 300, y: 540 }, // caja en el suelo izquierdo, antes del hueco
-],
-
 };
 
 export const NIVEL_2: ConfigNivel = {
@@ -58,7 +54,11 @@ export const NIVEL_2: ConfigNivel = {
   descripcion: 'Apílense para alcanzar la llave en las alturas.',
   plataformas: [
     { x: 400, y: 680, ancho: 800, alto: 20, etiqueta: 'suelo' },
+    // plataforma intermedia nueva para subir más fácil
+    { x: 300, y: 500, ancho: 160, alto: 20, etiqueta: 'plataforma-media' },
+    // plataforma alta donde está la llave
     { x: 200, y: 300, ancho: 160, alto: 20, etiqueta: 'plataforma-alta' },
+    // plataforma de salida
     { x: 650, y: 500, ancho: 200, alto: 20, etiqueta: 'plataforma-salida' },
     { x: 0,   y: 350, ancho: 20,  alto: 700, etiqueta: 'pared-izquierda' },
     { x: 800, y: 350, ancho: 20,  alto: 700, etiqueta: 'pared-derecha' },
@@ -71,6 +71,9 @@ export const NIVEL_2: ConfigNivel = {
   ],
   posicionLlave:  { x: 200, y: 260 },
   posicionPuerta: { x: 650, y: 450 },
+  cajas: [
+  { x: 600, y: 540 }, 
+],
 };
 
 export const NIVELES: ConfigNivel[] = [NIVEL_1, NIVEL_2];
