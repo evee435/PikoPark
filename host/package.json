@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "bun src/index.ts",
-    "dev": "tsx watch src/index.ts",
+    "dev": "npx tsx src/index.ts & npx vite --host 0.0.0.0",
     "cliente": "vite"
   },
   "keywords": [],
@@ -30,7 +30,7 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6.0.2",
     "ts-node": "^10.9.2",
-    "tsx": "^4.22.3",
+    "tsx": "^4.0.0",
     "typescript": "^6.0.3"
   }
 }
