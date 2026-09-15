@@ -1,4 +1,4 @@
-FROM oven/bun:1-baseline
+FROM oven/bun:1-debian-baseline
 WORKDIR /app
 
 COPY package.json bun.lock ./
