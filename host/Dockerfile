@@ -1,16 +1,12 @@
-FROM node:20-slim
-
-# Instalamos curl y la versión compatible de Bun
-RUN apt-get update && apt-get install -y curl unzip && \
-    curl -fsSL https://bun.sh/install | bash
-
-ENV PATH="/root/.bun/bin:${PATH}"
-
+FROM node:20-slim AS base
 WORKDIR /app
 
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+COPY package.json ./
+RUN npm install
 
 COPY . .
 
-CMD ["bun", "run", "index.ts"]
+EXPOSE 3000
+EXPOSE 5173
+
+CMD ["npm", "run", "dev"]
