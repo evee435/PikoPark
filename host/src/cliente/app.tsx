@@ -6,7 +6,7 @@ import { PantallaNivelCompletado } from './pantallas/pantallaNivelCompletado';
 import { PantallaPresentacionNivel } from './pantallas/pantallaPresentacionNivel';
 
 export function App() {
-  const wsUrl = `ws://${window.location.hostname}:3001`;
+  const wsUrl = `ws://${window.location.host}/ws`; 
   const { estado, conectado } = useWebSocket(wsUrl);
   const [mostrandoPresentacion, setMostrandoPresentacion] = useState(false);
   const [nivelPresentado, setNivelPresentado] = useState(0);

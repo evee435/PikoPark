@@ -6,7 +6,8 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
+# Exponemos el puerto de la app web (Vite)
 EXPOSE 5173
 
-CMD ["npm", "run", "dev"]
+# Aseguramos que host sea 0.0.0.0 al arrancar
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
