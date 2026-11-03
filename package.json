@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@elysiajs/node": "^1.4.5"
+  }
+}
