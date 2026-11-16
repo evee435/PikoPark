@@ -34,10 +34,10 @@ export function crearMotorFisico(nivel: ConfigNivel): MotorFisico {
   World.add(mundo, cuerposPlataformas);
 
   const techo = Bodies.rectangle(
-  1000, // centro del mapa en X
-  -25,  // un poco por encima de y = 0
-  2000, // ancho del mapa
-  50,   // grosor del techo
+  1000, 
+  -25,  
+  2000, 
+  50,   
   {
     isStatic: true,
     label: 'techo',
@@ -70,7 +70,7 @@ World.add(mundo, techo);
       label: 'puerta',
       restitution: 0,
       collisionFilter: {
-        mask: 0x0000, // no colisiona con nada físicamente
+        mask: 0x0000, 
       }
     }
   ),
@@ -84,7 +84,7 @@ World.add(mundo, techo);
       label: 'caja',
       friction: 0.8,
       restitution: 0,
-      mass: 5, // masa mayor que el jugador para que se note la diferencia de fuerza
+      mass: 5, 
     });
     World.add(mundo, caja);
   });
@@ -109,8 +109,9 @@ World.add(mundo, techo);
 export function crearCuerpoJugador(x: number, y: number, id: string): Matter.Body {
   return Bodies.rectangle(x, y, 40, 60, {
     label: `jugador-${id}`,
-    friction: 0.5,
-    frictionAir: 0.01,
+    friction: 0,
+    frictionStatic: 0,
+    frictionAir: 0.02,
     mass: MASA_JUGADOR,
     inertia: Infinity,
     restitution: 0,
@@ -139,18 +140,24 @@ export function aplicarMovimiento(
       }
       break;
     case 'ninguna':
-      Body.setVelocity(cuerpo, { x: cuerpo.velocity.x * 0.8, y: cuerpo.velocity.y });
-      break;
+     Body.setVelocity(cuerpo, { x: 0, y: cuerpo.velocity.y });      break;
   }
 }
 
 export function estaEnSuelo(cuerpo: Matter.Body, motor: Matter.Engine): boolean {
   const cuerpos = Matter.Composite.allBodies(motor.world);
-  const margen = 5; // margen para considerar que está en el suelo
+  const margen = 5; 
+  const mitadAncho = 18;
 
+  const puntosAbajo = [
+    { x: cuerpo.position.x,              y: cuerpo.position.y + 31 + margen }, // centro
+    { x: cuerpo.position.x - mitadAncho, y: cuerpo.position.y + 31 + margen }, // borde izquierdo
+    { x: cuerpo.position.x + mitadAncho, y: cuerpo.position.y + 31 + margen }, // borde derecho
+  ];
 
   return cuerpos.some((otro) => {
-    if (otro === cuerpo) return false; // remové el !otro.isStatic para detectar cajas también
+    if (otro === cuerpo) return false;
+    return puntosAbajo.some(punto => Matter.Bounds.contains(otro.bounds, punto));
 
     const puntoAbajo = {
       x: cuerpo.position.x,

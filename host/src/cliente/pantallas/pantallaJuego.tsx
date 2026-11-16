@@ -50,7 +50,7 @@ estado.cajas?.forEach(c => {
     ctx.fillStyle = 'white';
     ctx.font = `${16 * escalaX}px sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('🚪', nivel.posicionPuerta.x * escalaX, nivel.posicionPuerta.y * escalaY);
+    ctx.fillText('', nivel.posicionPuerta.x * escalaX, nivel.posicionPuerta.y * escalaY);
 
     if (estado.llaveEnJuego) {
       ctx.font = `${24 * escalaX}px sans-serif`;
