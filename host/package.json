@@ -14,6 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@elysiajs/node": "^1.4.5",
     "matter-js": "^0.20.0",
     "qrcode-terminal": "^0.12.0",
     "react": "^19.2.7",

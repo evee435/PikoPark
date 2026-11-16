@@ -16,7 +16,7 @@ function obtenerIPLocal(): string {
   return '127.0.0.1';
 }
 
-const ip       = obtenerIPLocal();
+const ip       = process.env.HOST_IP || obtenerIPLocal();
 const urlJuego = `ws://${ip}:${PUERTO}`;
 
 console.log('');
