@@ -1,4 +1,4 @@
-name: CI Pico Park
+name: CI/CD Pico Park
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 jobs:
   construir-imagen:
     runs-on: ubuntu-latest
-
     steps:
       - name: Descargar codigo del repositorio
         uses: actions/checkout@v4
@@ -28,4 +27,16 @@ jobs:
           context: .
           file: host/Dockerfile
           push: true
-          tags: evee435/picopark-server:v1.0
+          tags: evee435/picopark-server:latest
+
+  desplegar-vm:
+    needs: construir-imagen
+    runs-on: self-hosted  # <--- Aquí se ejecuta en tu máquina virtual
+    steps:
+      - name: Descargar codigo actualizado
+        uses: actions/checkout@v4
+
+      - name: Actualizar y desplegar contenedores
+        run: |
+          docker compose pull
+          docker compose up -d --remove-orphans
