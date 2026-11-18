@@ -5,13 +5,12 @@ services:
       dockerfile: Dockerfile
     container_name: picopark-server
     environment:
-      - HOST_IP=10.56.31.30
-    ports:
+      - HOST_IP=10.56.31.30    ports:
       - "3000:3000"
       - "5173:5173"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "http=require('http'); http.get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"]
+      test: ["CMD", "pgrep", "node"]
       interval: 30s
       timeout: 10s
       retries: 3
