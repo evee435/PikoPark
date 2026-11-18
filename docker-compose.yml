@@ -11,7 +11,7 @@ services:
       - "5173:5173"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      test: ["CMD", "node", "-e", "http=require('http'); http.get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"]
       interval: 30s
       timeout: 10s
       retries: 3
